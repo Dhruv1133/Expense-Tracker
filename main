@@ -1,0 +1,92 @@
+import os
+import csv
+import pandas as pd
+from datetime import datetime
+
+# Constants
+FILENAME = 'expenses.csv'
+
+def add_expense():
+    """Add a new expense entry."""
+    try:
+        amount = float(input("Enter the amount spent: "))
+        description = input("Enter a brief description: ")
+        category = input("Enter the category: ")
+        return amount, description, category
+    except ValueError:
+        print("Invalid input. Please enter a numeric value for the amount.")
+        return None
+
+def save_expense(amount, description, category):
+    """Save the expense entry to a CSV file."""
+    try:
+        with open(FILENAME, mode='a', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow([amount, description, category, datetime.now().strftime('%Y-%m-%d')])
+    except PermissionError:
+        print("Permission denied: Unable to write to the file. Please check file permissions.")
+
+def view_monthly_summary():
+    """View a summary of expenses by month."""
+    try:
+        df = pd.read_csv(FILENAME, header=None, names=['Amount', 'Description', 'Category', 'Date'])
+        df['Date'] = pd.to_datetime(df['Date'])
+        df['Month'] = df['Date'].dt.to_period('M')
+        summary = df.groupby('Month')['Amount'].sum()
+        print("\nMonthly Summary:")
+        print(summary)
+    except FileNotFoundError:
+        print("No expense records found.")
+    except PermissionError:
+        print("Permission denied: Unable to read the file. Please check file permissions.")
+
+def view_category_summary():
+    """View a summary of expenses by category."""
+    try:
+        df = pd.read_csv(FILENAME, header=None, names=['Amount', 'Description', 'Category', 'Date'])
+        summary = df.groupby('Category')['Amount'].sum()
+        print("\nCategory Summary:")
+        print(summary)
+    except FileNotFoundError:
+        print("No expense records found.")
+    except PermissionError:
+        print("Permission denied: Unable to read the file. Please check file permissions.")
+
+def main_menu():
+    """Display the main menu and handle user choices."""
+    while True:
+        print("\nExpense Tracker")
+        print("1. Add Expense")
+        print("2. View Monthly Summary")
+        print("3. View Category Summary")
+        print("4. Exit")
+        
+        choice = input("Choose an option: ")
+        
+        if choice == '1':
+            expense = add_expense()
+            if expense:
+                amount, description, category = expense
+                save_expense(amount, description, category)
+                print("Expense added successfully.")
+        elif choice == '2':
+            view_monthly_summary()
+        elif choice == '3':
+            view_category_summary()
+        elif choice == '4':
+            print("Exiting the program.")
+            break
+        else:
+            print("Invalid choice, please try again.")
+
+if __name__ == "__main__":
+    # Create the CSV file with headers if it doesn't exist
+    try:
+        if not os.path.exists(FILENAME):
+            with open(FILENAME, mode='x', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(['Amount', 'Description', 'Category', 'Date'])
+    except PermissionError:
+        print("Permission denied: Unable to create the file. Please check file permissions.")
+    
+    main_menu()
